@@ -1,0 +1,16 @@
+[workspace]
+authors = ["Will Dean <wd60622@gmail.com>"]
+channels = ["conda-forge"]
+name = "pymc-marimo-example"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+marimo = ">=0.14.6,<0.15"
+numba = ">=0.61.2,<0.62"
+
+[pypi-dependencies]
+nutpie = { git = "https://github.com/pymc-devs/nutpie", rev = "main" }
+pymc = { git = "https://github.com/williambdean/pymc", rev = "marimo-display" }
