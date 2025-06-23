@@ -15,3 +15,12 @@ Run with following command:
 ```terminal
 uvx marimo edit https://github.com/williambdean/pymc-marimo-example/blob/main/readme-example.py
 ```
+
+## Local Development
+
+I've built this example using [`pixi`](https://pixi.sh/latest/)
+
+```terminal
+pixi install
+pixi run marimo edit readme-example.py
+```
