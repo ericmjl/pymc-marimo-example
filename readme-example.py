@@ -101,7 +101,7 @@ def _(pm, x_data):
 
         # Likelihood
         # Assuming we measure deviation of each plant from baseline
-        plant_growth = pm.Normal("plant_growth", mu=mu, sigma=sigma, dims="trial")
+        pm.Normal("plant_growth", mu=mu, sigma=sigma, dims="trial")
 
     generative_model
     return coords, generative_model
