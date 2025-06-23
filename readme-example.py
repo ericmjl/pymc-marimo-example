@@ -4,7 +4,7 @@
 #     "marimo>=0.14.6,<0.15",
 #     "numba>=0.61.2,<0.62",
 #     "nutpie @ git+https://github.com/pymc-devs/nutpie@main",
-#     "pymc==4.2.0+1351.g02ffb7e8f",
+#     "pymc @ git+https://github.com/williambdean/pymc@marimo-display",
 # ]
 # ///
 
