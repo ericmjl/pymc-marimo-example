@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "marimo>=0.14.6,<0.15",
+#     "numba>=0.61.2,<0.62",
+#     "nutpie @ git+https://github.com/pymc-devs/nutpie@main",
+#     "pymc==4.2.0+1351.g02ffb7e8f",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.14.6"
@@ -21,6 +31,7 @@ def _():
     import marimo as mo
 
     import pymc as pm
+
     return mo, pm
 
 
