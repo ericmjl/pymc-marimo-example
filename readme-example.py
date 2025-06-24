@@ -13,7 +13,7 @@
 
 import marimo
 
-__generated_with = "0.14.7"
+__generated_with = "0.14.6"
 app = marimo.App(width="medium")
 
 
@@ -57,14 +57,14 @@ def _():
 
     import arviz as az
     import pymc as pm
+    import numpy as np
 
     import matplotlib.pyplot as plt
 
     az.style.use("arviz-darkgrid")
     plt.rcParams["figure.figsize"] = [12, 7]
     plt.rcParams["figure.dpi"] = 100
-
-    return mo, pm, az, plt
+    return az, mo, np, plt, pm
 
 
 @app.cell(hide_code=True)
@@ -147,7 +147,14 @@ def _(mo):
 @app.cell
 def _(mo):
     def beta_slider(value: float):
-        return mo.ui.slider(start=-30, value=value, stop=30, show_value=True, step=0.01)
+        return mo.ui.slider(
+            debounce=True,
+            start=-30,
+            value=value,
+            stop=30,
+            show_value=True,
+            step=0.01,
+        )
 
     fixed_betas = mo.ui.dictionary(
         {
@@ -158,6 +165,7 @@ def _(mo):
     )
 
     fixed_sigma = mo.ui.slider(
+        debounce=True,
         start=0.01,
         value=0.5,
         stop=5,
@@ -190,8 +198,8 @@ def _(run_following_cells):
 
 
 @app.cell
-def _(fixed_betas, fixed_sigma, generative_model, mo, pm, run_following_cells):
-    mo.stop(not run_following_cells.value)
+def _(fixed_betas, fixed_sigma, generative_model, pm):
+    # mo.stop(not run_following_cells.value)
 
     # Generating data from model by fixing parameters
     fixed_parameters = {
@@ -384,9 +392,28 @@ def _(idata, mo):
 
 
 @app.cell(hide_code=True)
-def _(az, plt, idata, plot_type_select, variable_select):
+def _(
+    az,
+    fixed_betas,
+    fixed_sigma,
+    idata,
+    np,
+    plot_type_select,
+    plt,
+    variable_select,
+):
     if plot_type_select.value == "posterior":
-        _ = az.plot_posterior(idata, var_names=[variable_select.value])
+        if variable_select.value == "betas":
+            ref_val = list(fixed_betas.value.values())
+        elif variable_select.value == "sigma":
+            ref_val = [fixed_sigma.value]
+        else:
+            ref_val = [np.log(fixed_sigma.value)]
+        _ = az.plot_posterior(
+            idata,
+            var_names=[variable_select.value],
+            ref_val=ref_val,
+        )
     elif plot_type_select.value == "trace":
         _ = az.plot_trace(idata, var_names=[variable_select.value])
     else:
