@@ -1,10 +1,13 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
+#     "anthropic==0.55.0",
+#     "arviz==0.21.0",
 #     "marimo>=0.14.6,<0.15",
+#     "matplotlib==3.10.3",
 #     "numba>=0.61.2,<0.62",
 #     "nutpie @ git+https://github.com/pymc-devs/nutpie@main",
-#     "pymc @ git+https://github.com/williambdean/pymc@marimo-display",
+#     "pymc==4.2.0+1351.g02ffb7e8f",
 # ]
 # ///
 
@@ -14,7 +17,7 @@ __generated_with = "0.14.6"
 app = marimo.App(width="medium")
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -54,13 +57,14 @@ def _():
 
     import arviz as az
     import pymc as pm
+    import numpy as np
 
     import matplotlib.pyplot as plt
 
     az.style.use("arviz-darkgrid")
     plt.rcParams["figure.figsize"] = [12, 7]
     plt.rcParams["figure.dpi"] = 100
-    return az, mo, pm
+    return az, mo, np, plt, pm
 
 
 @app.cell(hide_code=True)
@@ -143,7 +147,14 @@ def _(mo):
 @app.cell
 def _(mo):
     def beta_slider(value: float):
-        return mo.ui.slider(start=-30, value=value, stop=30, show_value=True, step=0.01)
+        return mo.ui.slider(
+            debounce=True,
+            start=-30,
+            value=value,
+            stop=30,
+            show_value=True,
+            step=0.01,
+        )
 
     fixed_betas = mo.ui.dictionary(
         {
@@ -154,7 +165,12 @@ def _(mo):
     )
 
     fixed_sigma = mo.ui.slider(
-        start=0.01, value=0.5, stop=5, show_value=True, step=0.01
+        debounce=True,
+        start=0.01,
+        value=0.5,
+        stop=5,
+        show_value=True,
+        step=0.01,
     )
 
     mo.vstack(
@@ -176,13 +192,14 @@ def _(mo):
 
 @app.cell
 def _(run_following_cells):
+    # This isn't working the way I want at the moment
     run_following_cells.value
     return
 
 
 @app.cell
-def _(fixed_betas, fixed_sigma, generative_model, mo, pm, run_following_cells):
-    mo.stop(not run_following_cells.value)
+def _(fixed_betas, fixed_sigma, generative_model, pm):
+    # mo.stop(not run_following_cells.value)
 
     # Generating data from model by fixing parameters
     fixed_parameters = {
@@ -214,13 +231,6 @@ def _(pm, seed, synthetic_model):
 
 
 @app.cell
-def _(az, synthetic_y):
-    ax = az.plot_dist(synthetic_y)
-    ax.set(title="Marginal distribution of plant_growth")
-    return
-
-
-@app.cell
 def _(mo):
     mo.md(
         r"""
@@ -247,7 +257,7 @@ def _(mo):
         r"""
     ## Bayesian Inference
 
-    Use `pm.sample` to sample the unknown parameters of the model using NUTS. By specifying the `nuts_sampler="nutpie"`, we can use NUTS sampler written in Rust.
+    Use `pm.sample` .
     """
     )
     return
@@ -255,14 +265,15 @@ def _(mo):
 
 @app.cell
 def _(inference_model, pm, seed):
+    # Infer parameters conditioned on observed data
     with inference_model:
         idata = pm.sample(random_seed=seed, nuts_sampler="nutpie")
     return (idata,)
 
 
 @app.cell
-def _(az, idata):
-    summary = az.summary(idata, var_names=["betas", "sigma"])
+def _(idata, pm):
+    summary = pm.stats.summary(idata, var_names=["betas", "sigma"])
 
     summary
     return
@@ -346,6 +357,80 @@ def _(idata, plant_growth_model, pm, seed):
         )
 
     pm.stats.summary(new_predictions, kind="stats")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## InferenceData Posterior Explorer""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(idata, mo):
+    vars = list(idata.posterior.data_vars)
+    variable_select = mo.ui.dropdown(
+        label="Select random var to view",
+        options=vars,
+        value=vars[0],
+    )
+
+    plot_type = ["posterior", "forest", "trace"]
+    plot_type_select = mo.ui.dropdown(
+        label="Select plot type",
+        options=plot_type,
+        value=plot_type[0],
+    )
+
+    mo.vstack(
+        [
+            variable_select,
+            plot_type_select,
+        ]
+    )
+    return plot_type_select, variable_select
+
+
+@app.cell(hide_code=True)
+def _(
+    az,
+    fixed_betas,
+    fixed_sigma,
+    idata,
+    np,
+    plot_type_select,
+    plt,
+    variable_select,
+):
+    if plot_type_select.value == "posterior":
+        if variable_select.value == "betas":
+            ref_val = list(fixed_betas.value.values())
+        elif variable_select.value == "sigma":
+            ref_val = [fixed_sigma.value]
+        else:
+            ref_val = [np.log(fixed_sigma.value)]
+        _ = az.plot_posterior(
+            idata,
+            var_names=[variable_select.value],
+            ref_val=ref_val,
+        )
+    elif plot_type_select.value == "trace":
+        _ = az.plot_trace(idata, var_names=[variable_select.value])
+    else:
+        _ = az.plot_forest(idata, var_names=[variable_select.value])
+    plt.show()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## InferenceData Diagnostics Explorer""")
+    return
+
+
+@app.cell
+def _(idata):
+    idata
     return
 
 
